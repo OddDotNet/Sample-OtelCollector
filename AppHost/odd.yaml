@@ -1,0 +1,26 @@
+exporters:
+  otlp/odd:
+    endpoint: ${env:ODD_OTLP_ENDPOINT}
+    tls:
+      insecure: true
+      
+extensions:
+  zpages:
+    endpoint: 0.0.0.0:55679
+    
+service:
+  extensions: [zpages]
+  
+  pipelines:
+    traces/odd:
+      receivers: [otlp]
+      processors: [batch, tail_sampling]
+      exporters: [otlp/odd]
+    metrics/odd:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ otlp/odd ]
+    logs/odd:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ otlp/odd ]
