@@ -62,12 +62,10 @@ public static class TraceHelpers
     
     public static Status CreateSpanStatus()
     {
-        var builder = new Faker<Status>()
-            .RuleFor(s => s.Code, f => f.PickRandom<Status.Types.StatusCode>())
-            .RuleFor(s => s.Message, (f, s) => s.Code == Status.Types.StatusCode.Error ? f.Random.String2(8) : string.Empty);
-        
-        var generated = builder.Generate();
-        return generated;
+        return new Status
+        {
+            Code = Status.Types.StatusCode.Unset
+        };
     }
     
     

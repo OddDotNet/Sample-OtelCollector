@@ -26,10 +26,11 @@ processors:
                         key: service.name,
                         values:
                           [
-                            service-4,
-                            service-5,
-                            service-6
+                            service-1,
+                            service-2,
+                            service-3
                           ],
+                        invert_match: true,
                       },
                   },
                   { name: sample-all-policy, type: always_sample },

@@ -1,13 +1,10 @@
+using Aspire.Hosting;
 using Grpc.Net.Client;
 using OddDotCSharp;
 using OddDotNet.Proto.Common.V1;
-using OddDotNet.Proto.Metrics.V1;
 using OddDotNet.Proto.Trace.V1;
 using OpenTelemetry.Proto.Collector.Trace.V1;
 using OpenTelemetry.Proto.Trace.V1;
-using Xunit.Abstractions;
-using PropertyFilter = OddDotNet.Proto.Trace.V1.PropertyFilter;
-using Where = OddDotNet.Proto.Metrics.V1.Where;
 
 namespace CollectorTests;
 
@@ -17,14 +14,7 @@ public class ConfigurationTests : IAsyncLifetime
     private DistributedApplication _app;
     private SpanQueryService.SpanQueryServiceClient _spanQueryServiceClient;
     private TraceService.TraceServiceClient _traceServiceClient;
-#pragma warning enable CS8618
-    
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public ConfigurationTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
+#pragma warning restore CS8618
 
     [Fact]
     public async Task OptedOutSpansAreAlwaysSampled()
@@ -142,7 +132,7 @@ public class ConfigurationTests : IAsyncLifetime
             },
             Filters =
             {
-                new OddDotNet.Proto.Trace.V1.Where
+                new Where
                 {
                     Property = new PropertyFilter
                     {
@@ -166,24 +156,8 @@ public class ConfigurationTests : IAsyncLifetime
         _app = await appHostBuilder.BuildAsync();
         var resourceNotificationService = _app.Services.GetRequiredService<ResourceNotificationService>();
         await _app.StartAsync();
-        await resourceNotificationService.WaitForResourceAsync("odddotnet", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(5));
-        await resourceNotificationService.WaitForResourceAsync("otel", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(5));
-        
-        // .NET Aspire 8.2 does not have health check capabilities or the ability for a resource to
-        // report healthy before continuing. .NET Aspire 9 *WILL* have it, but until then, perform
-        // a manual health check.
-        var oddDotNetClient = _app.CreateHttpClient("odddotnet");
-        bool oddDotNetIsHealthy;
-        const int maxAttempts = 3;
-        int currentAttempt = 0;
-        do
-        {
-            currentAttempt++;
-            var healthCheckResponse = await oddDotNetClient.GetAsync("/healthz");
-            oddDotNetIsHealthy = healthCheckResponse.IsSuccessStatusCode;
-            if (!oddDotNetIsHealthy)
-                await Task.Delay(TimeSpan.FromSeconds(1));
-        } while (!oddDotNetIsHealthy && currentAttempt <= maxAttempts);
+        await resourceNotificationService.WaitForResourceAsync("otel", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(30));
+        await resourceNotificationService.WaitForResourceAsync("odddotnet", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(30));
         
         var channel = GrpcChannel.ForAddress(_app.GetEndpoint("odddotnet", "grpc"));
         _spanQueryServiceClient = new SpanQueryService.SpanQueryServiceClient(channel);
